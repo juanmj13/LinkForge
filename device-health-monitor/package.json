@@ -1,0 +1,26 @@
+{
+  "name": "device-health-monitor",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && node bin/index.js",
+    "dev": "ts-node src/index.ts"
+
+  },
+  "keywords": [],
+  "author": "juanmj13",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "dotenv": "^17.2.1",
+    "mqtt": "^5.13.3",
+    "systeminformation": "^5.27.7"
+  },
+  "devDependencies": {
+    "@types/mqtt": "^0.0.34",
+    "@types/node": "^24.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
