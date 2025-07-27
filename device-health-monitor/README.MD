@@ -1,6 +1,6 @@
 # Device Health Monitor
 
-Docker‑ready TypeScript microservice for Windows  device health monitoring. Publishes JSON payloads over MQTT with system metadata, performance metrics, and configurable settings via an `.env`.
+**Work‑in‑progress** TypeScript microservice for Windows device health monitoring. Publishes JSON payloads over MQTT with system metadata, performance metrics, and configurable settings via an `.env`.
 
 ---
 
@@ -10,7 +10,7 @@ Docker‑ready TypeScript microservice for Windows  device health monitoring. Pu
 - Monitors performance (% CPU, RAM, Disk, GPU utilization)  
 - Publishes at configurable intervals over MQTT  
 - Fully configurable via `.env`  
-- Graceful error handling to let Docker auto‑restart on failures  
+- Graceful error handling to restart on failures  
 
 ---
 
@@ -25,8 +25,6 @@ device-health-monitor/
 │   └── interfaces/
 │       └── interfaces.ts        # TypeScript interfaces
 ├── .env.example                 # Sample environment variables
-├── Dockerfile                   # Multi‑stage Docker build
-├── .dockerignore
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -37,7 +35,8 @@ device-health-monitor/
 ## Prerequisites
 
 - Node.js v16+  
-- Docker (optional, for containerized deployment)  
+- npm (comes with Node.js)  
+- PM2 (`npm install -g pm2`)  
 
 ---
 
@@ -45,7 +44,7 @@ device-health-monitor/
 
 1. **Clone the repo**  
    ```bash
-   git clone <your-repo-url>
+   git clone <https://github.com/juanmj13/microservice-playground.git>
    cd device-health-monitor
    ```
 
@@ -55,12 +54,9 @@ device-health-monitor/
    ```
 
 3. **Configure environment**  
-   Copy and edit:
-   ```bash
-   cp .env.example .env
-   ```
-   Fill in:
-   ```
+   Create your .env file according to the following:
+   
+   ```ini
    MQTT_HOST=your-broker.host
    MQTT_PORT=8883
    MQTT_TLS=true
@@ -68,62 +64,84 @@ device-health-monitor/
    MQTT_PASSWORD=yourPass
    MQTT_TOPIC=Your/Topic
    DEVICE_NAME=YourDeviceName
-   PUBLISH_INTERVAL=1000
+   PUBLISH_INTERVAL=6000
    ```
 
----
-
-## Scripts
-
-- **build**  
-  ```bash
-  npm run build
-  ```
-  Transpiles TypeScript → JavaScript in `dist/`.
-
-- **start**  
-  ```bash
-  npm run start
-  ```
-  Builds then runs `dist/index.js`.
-
-- **dev**  
-  ```bash
-  npm run dev
-  ```
-  Runs `src/index.ts` via `ts-node` for hot reload.
-
----
-
-## Docker
-
-1. **Build image**  
+4. **Build**  
    ```bash
-   docker build -t device-health-monitor .
+   npm run build
    ```
 
-2. **Run container**  
+5. **Run**  
    ```bash
-   docker run -d      --name device-health      --restart on-failure      --env-file .env      device-health-monitor
+   npm run start
    ```
 
 ---
 
-## Usage
+## Running with PM2
 
-Once running, the service logs:
+Start the service under PM2 to keep it alive and auto‑restart on error:
 
-```
-✅ Connected to MQTT
-🕒 Publishing data every <interval> ms to <topic>
-📤 Published to <topic>
+```bash
+# Install PM2 globally if you haven't already
+npm install -g pm2
+
+# Start the built script and give it a name
+pm2 start dist/index.js --name device-health-monitor
+
+# View process list
+pm2 list
+
+# Follow logs in real time
+pm2 logs device-health-monitor
 ```
 
-Check your MQTT broker for incoming JSON messages.
+---
+
+## Auto‑start on Windows
+
+### Windows Scheduled Task
+
+1. Open PowerShell **as Administrator**.
+
+2. Run:
+   ```powershell
+   $action    = New-ScheduledTaskAction -Execute "$env:APPDATA pm\pm2.cmd" -Argument "resurrect"
+   $trigger   = New-ScheduledTaskTrigger -AtLogOn
+   $settings  = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
+   Register-ScheduledTask `
+     -TaskName "PM2 Resurrect DeviceHealth" `
+     -Action $action `
+     -Trigger $trigger `
+     -Settings $settings `
+     -RunLevel Highest
+   ```
+
+This task will run `pm2 resurrect` at each logon, reloading your saved processes automatically.
+
+---
+
+## Monitoring & Logs
+
+- **Dashboard**  
+  ```bash
+  pm2 monit
+  ```
+
+- **Rotate logs** (optional):
+  ```bash
+  pm2 install pm2-logrotate
+  pm2 set pm2-logrotate:max_size 10M
+  pm2 set pm2-logrotate:retain 3
+  ```
+
+---
 
 ## License
+
 MIT
 
 ## Author
-- Juan Manuel Jiménez [juan.jimenez.c13@gmail.com]
 
+Juan Manuel Jiménez (<juan.jimenez.c13@gmail.com>)
