@@ -40,6 +40,51 @@ device-health-monitor/
 
 ---
 
+## JSON Example
+This microservice publishes a JSON to MQTT Broker according to the following structure.
+
+```json
+{
+  "Timestamp": "2025-07-27T17:36:18.998Z",
+  "DeviceName": "LabDemo",
+  "DeviceInfo": {
+    "manufacturer": "Dell Inc.",
+    "model": "Inspiron 15-3567",
+    "serial": "3V3SRJ2",
+    "uuid": "4c4c4544-1234-5678-8053-b3c04f524a32"
+  },
+  "DevicePerformance": {
+    "cpuLoad": 33.38,
+    "memoryUsage": 70.43,
+    "diskUsage": [
+      {
+        "fs": "C:",
+        "usage": 93.37
+      },
+      {
+        "fs": "D:",
+        "usage": 81.86
+      },
+      {
+        "fs": "E:",
+        "usage": 25.45
+      }
+    ],
+    "gpu": [
+      {
+        "model": "Intel(R) HD Graphics 620",
+        "vendor": "Intel Corporation",
+        "utilization": 0
+      },
+      {
+        "model": "Radeon (TM) R5 M430",
+        "vendor": "Advanced Micro Devices, Inc.",
+        "utilization": 0
+      }
+    ]
+  }
+}
+```
 ## Setup
 
 1. **Clone the repo**  
