@@ -39,7 +39,6 @@ const char* FW_VERSION      = "1.2.0";
 // TLS: para pruebas; en producción, cargar CA y quitar setInsecure()
 const bool  TLS_INSECURE    = true;
 
-/* ===================== GLOBALS (RUNTIME DERIVADOS) ===================== */
 WiFiClientSecure secureClient;
 PubSubClient     mqtt(secureClient);
 unsigned long    lastPublishMs = 0;
