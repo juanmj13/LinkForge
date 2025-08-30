@@ -1,4 +1,4 @@
-// secrets_example.h  (sube ESTE archivo al repo como plantilla)
+// secrets_example.h  
 #pragma once
 #define WIFI_SSID        "REPLACE_ME"
 #define WIFI_PASS        "REPLACE_ME"
