@@ -2,12 +2,16 @@
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <time.h>
+#include <sys/time.h>
 
 #if __has_include("secrets.h")
   #include "secrets.h"
 #else
   #include "secrets_example.h"
 #endif
+
+// ===================== CONFIGURACIÓN =====================
 
 // Publish interval
 const unsigned long PUBLISH_INTERVAL_MS = 30000UL; // 30 s
@@ -32,26 +36,30 @@ const float BATT_V_MIN      = 3.30f;  // 0% (ajusta según tu perfil)
 const float BATT_V_MAX      = 4.20f;  // 100%
 const int   BATT_LOW_PCT    = 20;     // umbral de alarma (%)
 
-// Device/metadata
-const char* DEVICE_TYPE     = "LinkForge Sensor - 3x temperature + battery";
-const char* FW_VERSION      = "1.2.0";
 
 // TLS: para pruebas; en producción, cargar CA y quitar setInsecure()
 const bool  TLS_INSECURE    = true;
+
+// ===== Tiempo por NTP =====
+const char* NTP1 = "time.google.com";
+const char* NTP2 = "pool.ntp.org";
+const char* NTP3 = "time.cloudflare.com";
+
+// Zona horaria:
+// - UTC: "UTC0"
+// - Hora fija Monterrey (sin DST): "CST6"  (offset -06:00)
+// - Si quisieras DST real, usa una cadena POSIX adecuada.
+const char* TZ_STRING = "CST6";  // cambia a "CST6" si prefieres hora local fija -06:00
 
 WiFiClientSecure secureClient;
 PubSubClient     mqtt(secureClient);
 unsigned long    lastPublishMs = 0;
 
 String g_chip_uid;        // eFuse MAC como hex continuo (12 chars)
-String g_wifi_mac;        // "AA:BB:CC:DD:EE:FF"
-String g_chip_model;      // e.g. "ESP32"
-int    g_chip_rev = 0;    // revisión del chip
-String g_sdk;             // versión SDK
-String g_device_id;       // derivado (e.g., "ttgo-<last6>")
 String g_mqtt_client_id;  // MQTT_CLIENT_ID_PREFIX + chip_uid
+String g_mqtt_topic;
 
-/* ===================== HELPERS ===================== */
+/* ===================== HELPERS: ADC / BATERÍA ===================== */
 uint16_t readMilliVoltsAvg(int pin, int samples = ADC_SAMPLES) {
   uint32_t acc = 0;
   for (int i = 0; i < samples; i++) {
@@ -99,6 +107,61 @@ String shortIdFromUid(const String& uid12) {
   return uid12;
 }
 
+/* ===================== TIEMPO (NTP + ISO 8601) ===================== */
+void setupTime() {
+  // Configura TZ + servidores NTP y arranca SNTP
+  configTzTime(TZ_STRING, NTP1, NTP2, NTP3);
+
+  // Espera a que haya hora válida ( > 2021-01-01 )
+  const time_t MIN_VALID = 1609459200; // 2021-01-01 00:00:00 UTC
+  Serial.print("Syncing time via SNTP");
+  for (int i = 0; i < 40; ++i) { // ~20 s
+    time_t now = time(nullptr);
+    if (now > MIN_VALID) {
+      Serial.println("\nSNTP time synced.");
+      return;
+    }
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println("\nSNTP sync timeout (continuing anyway).");
+}
+
+// Genera ISO8601 con milisegundos. Si useUtc=true => termina en 'Z',
+// de lo contrario incluye el offset local (+HH:MM o -HH:MM)
+String iso8601Now(bool useUtc = true) {
+  struct timeval tv;
+  gettimeofday(&tv, nullptr);
+
+  time_t secs = tv.tv_sec;
+  struct tm tmres;
+  if (useUtc) {
+    gmtime_r(&secs, &tmres);
+  } else {
+    localtime_r(&secs, &tmres);
+  }
+
+  char base[32];
+  strftime(base, sizeof(base), "%Y-%m-%dT%H:%M:%S", &tmres);
+  int ms = (int)(tv.tv_usec / 1000);
+
+  if (useUtc) {
+    char out[40];
+    snprintf(out, sizeof(out), "%s.%03dZ", base, ms);
+    return String(out);
+  } else {
+    // Obtén offset tipo ±HHMM y conviértelo a ±HH:MM para ISO
+    char zbuf[6]; // ej: -0600 + NUL
+    strftime(zbuf, sizeof(zbuf), "%z", &tmres);
+    char ziso[7]; // ±HH:MM + NUL
+    snprintf(ziso, sizeof(ziso), "%c%c%c:%c%c", zbuf[0], zbuf[1], zbuf[2], zbuf[3], zbuf[4]);
+
+    char out[48];
+    snprintf(out, sizeof(out), "%s.%03d%s", base, ms, ziso);
+    return String(out);
+  }
+}
+
 /* ===================== WIFI / MQTT ===================== */
 void setupWifi() {
   Serial.printf("Connecting to %s ...\n", WIFI_SSID);
@@ -142,19 +205,17 @@ bool publishSensors() {
 
   // JSON
   StaticJsonDocument<1280> doc;
-  doc["device_type"] = DEVICE_TYPE;
-  doc["device_id"]   = g_device_id;
-  doc["uptime_s"]    = (uint32_t)(millis() / 1000);
+  doc["version"]= FW_VERSION;
+  // ===> Timestamp (UTC en ISO 8601 con ms). Para offset local usa iso8601Now(false).
+  doc["timestamp"]   = iso8601Now(/*useUtc=*/ false);
 
   JsonObject device = doc.createNestedObject("device");
-  device["chip_uid"]   = g_chip_uid;
-  device["wifi_mac"]   = g_wifi_mac;
-  device["chip_model"] = g_chip_model;
-  device["chip_rev"]   = g_chip_rev;
+  
+  device["type"] = DEVICE_TYPE;
+  device["id"]   = g_chip_uid;
+  device["name"] = DEVICE_NAME;
+  device["uptime"]    = (uint32_t)(millis() / 1000);
 
-  JsonObject firmware = doc.createNestedObject("firmware");
-  firmware["version"] = FW_VERSION;
-  firmware["sdk"]     = g_sdk;
 
   JsonObject status = doc.createNestedObject("status");
   status["battery"]         = batt_pct;     // %
@@ -166,36 +227,35 @@ bool publishSensors() {
 
   JsonObject s1 = sensors.createNestedObject();
   s1["type"]  = "temperature";
-  s1["label"] = "left";
-  s1["unit"]  = "C";
+  s1["name"] = "left";
   s1["value"] = t_left;
+  s1["unit"]  = "°C";
+  s1["port"]  = 1;  
+
 
   JsonObject s2 = sensors.createNestedObject();
   s2["type"]  = "temperature";
-  s2["label"] = "center";
-  s2["unit"]  = "C";
+  s2["name"] = "center";
   s2["value"] = t_center;
+  s2["unit"]  = "°C";
+  s2["port"]  = 2;
 
   JsonObject s3 = sensors.createNestedObject();
   s3["type"]  = "temperature";
-  s3["label"] = "right";
-  s3["unit"]  = "C";
+  s3["name"] = "right";
   s3["value"] = t_right;
-
-  JsonObject sb = sensors.createNestedObject();
-  sb["type"]    = "battery";
-  sb["label"]   = "main_cell";
-  sb["unit"]    = "V";
-  sb["value"]   = vbatt;
-  sb["percent"] = batt_pct;
+  s3["unit"]  = "°C";
+  s3["port"]  = 3;
 
   // Serializa + publica
   char jsonBuffer[1280];
   size_t n = serializeJson(doc, jsonBuffer, sizeof(jsonBuffer));
 
-  bool ok = mqtt.publish(MQTT_TOPIC, jsonBuffer, n);
+  
+  bool ok = mqtt.publish(g_mqtt_topic.c_str(), (const uint8_t*)jsonBuffer, (unsigned int)n, true);
+
   Serial.println("JSON published:");
-  Serial.println(jsonBuffer);
+  Serial.println(jsonBuffer); 
   if (!ok) {
     Serial.println("Publish failed (buffer too small or connection issue).");
   }
@@ -214,17 +274,18 @@ void setup() {
   analogSetPinAttenuation(PIN_BATT,        ADC_ATTEN);
 
   // Identificadores de hardware / firmware
-  g_chip_uid  = getChipUidHex();
-  g_chip_model = String(ESP.getChipModel());
-  g_chip_rev   = ESP.getChipRevision();
-  g_sdk        = String(ESP.getSdkVersion());
+  g_chip_uid   = getChipUidHex();
+  g_mqtt_topic = String("LinkForgeCloud/") + CID + "/" + LOCATION + "/" + AREA + "/" + SUBAREA + "/dev/" + DEVICE_NAME + "/SmartSensorEvent";
+  Serial.println(g_mqtt_topic);
+
 
   // Arranca WiFi (para obtener MAC en formato colon-separated)
   setupWifi();
-  g_wifi_mac = WiFi.macAddress();
 
-  // Device id y client id únicos
-  g_device_id       = String("ttgo-") + shortIdFromUid(g_chip_uid);
+  // Tiempo por NTP (usar después de tener WiFi)
+  setupTime();
+
+  // client id únicos
   g_mqtt_client_id  = String(MQTT_CLIENT_ID_PREFIX) + g_chip_uid;
 
   // TLS

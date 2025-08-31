@@ -1,0 +1,54 @@
+asyncapi: 2.6.0
+info:
+  title: LinkForge-Cloud
+  version: 1.0.0
+  description: |-
+   ### LinkForge-Cloud
+   * SmartSensors Event
+
+  contact:
+    name: Juan Manuel Jiménez
+    email: contacto@juanmma-tech.com.mx
+id: urn:LinkForge:cloud:smart-sensor
+channels:
+  ng/{clientid}/{location}/{area}/{subarea}/dev/{deviceid}/{devEvent}:
+    description: Los payload publicados en este topics, contienen la información referente a cualquier tipo de SmartSensor en LinkForge Cloud. Con lo que buscamos que, cualquier sensor, desarrollado o no por el equipo de LinkForge, pueda integrarse fácilmente.
+    parameters:
+      clientid:
+        description: ClientId asignado al cliente o usuario
+        schema:
+          type: string
+      location:
+        description: Ubicación del sensor, ejemplo "Planta3"
+        schema:
+          type: string
+      area:
+        description: Área del sensor, ejemplo "Ensamblaje"
+        schema:
+          type: string
+      subarea:
+        description: Subárea del sensor, ejemplo "Montaje"
+        schema:
+          type: string
+      deviceid:
+        description: El número de serie del dispositivo, extraido directamente del microcontrolador
+        schema:
+          type: string
+      devEvent:
+        description: Nombre del evento, en este caso siempre será "SmartSensorEvent" o "SmartSensorStatus"
+        schema:
+          type: string
+          enum:
+            - SmartSensorEvent
+            - SmartSensorStatus
+    publish:
+      operationId: Smart Sensors Event
+      tags:
+        - name: Smart Sensors Event 1.0.0
+      message:
+        oneOf:
+          - name: Smart Sensor Event 1.0.0
+            messageId: Single and Multi Sensor Event 1.0.0
+            description: This payload contains all the data about sensor and multisensor event
+            $ref: '../async-api/components/SmartSensorEvent_v1.0.0.yml#/components/messages/SmartSensorEventObject' 
+  

@@ -1,0 +1,92 @@
+asyncapi: 2.6.0
+info:
+  title: SmartSensorEvent
+  version: 1.0.0
+  description: Smart Sensor Event V1.0.0
+components:
+  messages:
+    SmartSensorEventObject:
+      payload:
+        type: object
+        required:
+          - Version
+          - Timestamp
+          - Analog
+          - Digital
+        properties:
+          Version:
+            type: string
+            example: 1.0.0
+            description: API Version
+          Timestamp:
+            type: string
+            format: date-time
+            example: '2022-09-29T07:10:15.520Z'
+            description: Timestamp when the data was published to the UNS
+          Analog:
+            type: array
+            items:
+              type: object
+              required:
+                - Name
+                - Value
+                - Units
+                - Port
+              properties:
+                Name:
+                  type: string
+                  examples:
+                    - TankLevel1
+                  description: Measurement descriptive name
+                Value:
+                  type: number
+                  format: float
+                  examples:
+                    - 1.25
+                  description: >-
+                    Analog Value in real time
+                Units:
+                  type: string
+                  examples:
+                    - °C
+                  description: Units
+                Port:
+                  type: integer
+                  examples:
+                    - 1
+                  description: >-
+                    Phyisical port of the device
+          Digital:
+            type: array
+            items:
+              type: object
+              required:
+                - Name
+                - Value
+                - StatusDesc
+                - Port
+              properties:
+                Name:
+                  type: string
+                  examples:
+                    - Main Door Sensor
+                  description: Measurement descriptive name
+                Value:
+                  type: boolean
+                  examples:
+                    - true
+                  description: >-
+                    Boolean value / Status
+                StatusDesc:
+                  type: string
+                  examples:
+                    - OPEN/CLOSE
+                  description: 0 State / 1 State
+                Port:
+                  type: integer
+                  examples:
+                    - 1
+                  description: >-
+                    Physical Port of the device
+                
+          
