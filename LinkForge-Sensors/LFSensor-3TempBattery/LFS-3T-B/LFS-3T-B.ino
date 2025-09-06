@@ -13,8 +13,12 @@
 
 // ===================== CONFIGURACIÓN =====================
 
-// Publish interval
-const unsigned long PUBLISH_INTERVAL_MS = 30000UL; // 30 s
+// >>> Deep Sleep: intervalo entre ciclos (segundos)
+//Convertir en global
+const uint32_t SLEEP_INTERVAL_SEC = 60;   // 1 minuto
+
+// Publish interval (ya no se usa en loop; se deja por referencia)
+// const unsigned long PUBLISH_INTERVAL_MS = 30000UL;
 
 // ADC config
 const int   ADC_WIDTH_BITS   = 12;       // 0..4095
@@ -36,7 +40,6 @@ const float BATT_V_MIN      = 3.30f;  // 0% (ajusta según tu perfil)
 const float BATT_V_MAX      = 4.20f;  // 100%
 const int   BATT_LOW_PCT    = 20;     // umbral de alarma (%)
 
-
 // TLS: para pruebas; en producción, cargar CA y quitar setInsecure()
 const bool  TLS_INSECURE    = true;
 
@@ -45,11 +48,8 @@ const char* NTP1 = "time.google.com";
 const char* NTP2 = "pool.ntp.org";
 const char* NTP3 = "time.cloudflare.com";
 
-// Zona horaria:
-// - UTC: "UTC0"
-// - Hora fija Monterrey (sin DST): "CST6"  (offset -06:00)
-// - Si quisieras DST real, usa una cadena POSIX adecuada.
-const char* TZ_STRING = "CST6";  // cambia a "CST6" si prefieres hora local fija -06:00
+// Zona horaria (ej. Monterrey fija sin DST):
+const char* TZ_STRING = "CST6";
 
 WiFiClientSecure secureClient;
 PubSubClient     mqtt(secureClient);
@@ -58,6 +58,9 @@ unsigned long    lastPublishMs = 0;
 String g_chip_uid;        // eFuse MAC como hex continuo (12 chars)
 String g_mqtt_client_id;  // MQTT_CLIENT_ID_PREFIX + chip_uid
 String g_mqtt_topic;
+
+// >>> Contador de arranques en Deep Sleep (útil para diagnóstico)
+RTC_DATA_ATTR uint32_t g_bootCount = 0;
 
 /* ===================== HELPERS: ADC / BATERÍA ===================== */
 uint16_t readMilliVoltsAvg(int pin, int samples = ADC_SAMPLES) {
@@ -90,9 +93,8 @@ int voltageToPercent(float v) {
 
 // eFuse MAC -> hex continuo (12 chars) como chip_uid (número de serie)
 String getChipUidHex() {
-  uint64_t mac = ESP.getEfuseMac(); // 48-bit válido en los bits bajos
+  uint64_t mac = ESP.getEfuseMac(); // 48-bit en bits bajos
   char buf[13];
-  // Construye como 6 bytes MSB->LSB
   snprintf(buf, sizeof(buf),
            "%02X%02X%02X%02X%02X%02X",
            (uint8_t)(mac >> 40), (uint8_t)(mac >> 32),
@@ -102,18 +104,15 @@ String getChipUidHex() {
 }
 
 String shortIdFromUid(const String& uid12) {
-  // últimos 6 chars para identificar corto
   if (uid12.length() >= 6) return uid12.substring(uid12.length() - 6);
   return uid12;
 }
 
 /* ===================== TIEMPO (NTP + ISO 8601) ===================== */
 void setupTime() {
-  // Configura TZ + servidores NTP y arranca SNTP
   configTzTime(TZ_STRING, NTP1, NTP2, NTP3);
 
-  // Espera a que haya hora válida ( > 2021-01-01 )
-  const time_t MIN_VALID = 1609459200; // 2021-01-01 00:00:00 UTC
+  const time_t MIN_VALID = 1609459200; // 2021-01-01 UTC
   Serial.print("Syncing time via SNTP");
   for (int i = 0; i < 40; ++i) { // ~20 s
     time_t now = time(nullptr);
@@ -127,8 +126,6 @@ void setupTime() {
   Serial.println("\nSNTP sync timeout (continuing anyway).");
 }
 
-// Genera ISO8601 con milisegundos. Si useUtc=true => termina en 'Z',
-// de lo contrario incluye el offset local (+HH:MM o -HH:MM)
 String iso8601Now(bool useUtc = true) {
   struct timeval tv;
   gettimeofday(&tv, nullptr);
@@ -150,10 +147,9 @@ String iso8601Now(bool useUtc = true) {
     snprintf(out, sizeof(out), "%s.%03dZ", base, ms);
     return String(out);
   } else {
-    // Obtén offset tipo ±HHMM y conviértelo a ±HH:MM para ISO
-    char zbuf[6]; // ej: -0600 + NUL
+    char zbuf[6]; // ej: -0600
     strftime(zbuf, sizeof(zbuf), "%z", &tmres);
-    char ziso[7]; // ±HH:MM + NUL
+    char ziso[7]; // ±HH:MM
     snprintf(ziso, sizeof(ziso), "%c%c%c:%c%c", zbuf[0], zbuf[1], zbuf[2], zbuf[3], zbuf[4]);
 
     char out[48];
@@ -206,16 +202,15 @@ bool publishSensors() {
   // JSON
   StaticJsonDocument<1280> doc;
   doc["version"]= FW_VERSION;
-  // ===> Timestamp (UTC en ISO 8601 con ms). Para offset local usa iso8601Now(false).
-  doc["timestamp"]   = iso8601Now(/*useUtc=*/ false);
+
+  // Timestamp (usa hora local con offset, como ya tenías)
+  doc["timestamp"] = iso8601Now(/*useUtc=*/ false);
 
   JsonObject device = doc.createNestedObject("device");
-  
-  device["type"] = DEVICE_TYPE;
-  device["id"]   = g_chip_uid;
-  device["name"] = DEVICE_NAME;
-  device["uptime"]    = (uint32_t)(millis() / 1000);
-
+  device["type"]  = DEVICE_TYPE;
+  device["id"]    = g_chip_uid;
+  device["name"]  = DEVICE_NAME;
+  device["uptime"] = (uint32_t)(millis() / 1000);
 
   JsonObject status = doc.createNestedObject("status");
   status["battery"]         = batt_pct;     // %
@@ -227,44 +222,65 @@ bool publishSensors() {
 
   JsonObject s1 = sensors.createNestedObject();
   s1["type"]  = "temperature";
-  s1["name"] = "left";
+  s1["name"]  = "left";
   s1["value"] = t_left;
   s1["unit"]  = "°C";
-  s1["port"]  = 1;  
-
+  s1["port"]  = 1;
 
   JsonObject s2 = sensors.createNestedObject();
   s2["type"]  = "temperature";
-  s2["name"] = "center";
+  s2["name"]  = "center";
   s2["value"] = t_center;
   s2["unit"]  = "°C";
   s2["port"]  = 2;
 
   JsonObject s3 = sensors.createNestedObject();
   s3["type"]  = "temperature";
-  s3["name"] = "right";
+  s3["name"]  = "right";
   s3["value"] = t_right;
   s3["unit"]  = "°C";
   s3["port"]  = 3;
 
-  // Serializa + publica
   char jsonBuffer[1280];
   size_t n = serializeJson(doc, jsonBuffer, sizeof(jsonBuffer));
 
-  
   bool ok = mqtt.publish(g_mqtt_topic.c_str(), (const uint8_t*)jsonBuffer, (unsigned int)n, true);
 
   Serial.println("JSON published:");
-  Serial.println(jsonBuffer); 
+  Serial.println(jsonBuffer);
   if (!ok) {
     Serial.println("Publish failed (buffer too small or connection issue).");
   }
   return ok;
 }
 
+/* ===================== DEEP SLEEP HELPERS ===================== */
+void goToDeepSleep(uint32_t sleep_sec) {
+  // Cierra conexiones y radios para consumir menos antes de dormir
+  if (mqtt.connected()) {
+    mqtt.disconnect();            // permitirá que se envíe LWT=offline si aplica
+    delay(50);
+  }
+  WiFi.disconnect(true, true);    // borra credenciales y desconecta
+  WiFi.mode(WIFI_OFF);
+  btStop();                       
+  delay(50);
+  Serial.flush();
+
+  esp_sleep_enable_timer_wakeup((uint64_t)sleep_sec * 1000000ULL);
+  Serial.printf("Entering deep sleep for %u s...\n", sleep_sec);
+  delay(10);
+  esp_deep_sleep_start();
+}
+
 /* ===================== SETUP / LOOP ===================== */
 void setup() {
+  const unsigned long t_start = millis();
+
+  g_bootCount++;
   Serial.begin(115200);
+  delay(50);
+  Serial.printf("\n=== Boot #%lu (wakeup reason: %d) ===\n", (unsigned long)g_bootCount, esp_sleep_get_wakeup_cause());
 
   // ADC
   analogSetWidth(ADC_WIDTH_BITS);
@@ -273,43 +289,32 @@ void setup() {
   analogSetPinAttenuation(PIN_TEMP_RIGHT,  ADC_ATTEN);
   analogSetPinAttenuation(PIN_BATT,        ADC_ATTEN);
 
-  // Identificadores de hardware / firmware
+  // Identificadores / tópicos
   g_chip_uid   = getChipUidHex();
   g_mqtt_topic = String("LinkForgeCloud/") + CID + "/" + LOCATION + "/" + AREA + "/" + SUBAREA + "/dev/" + DEVICE_NAME + "/SmartSensorEvent";
   Serial.println(g_mqtt_topic);
 
-
-  // Arranca WiFi (para obtener MAC en formato colon-separated)
+  // WiFi + Tiempo
   setupWifi();
-
-  // Tiempo por NTP (usar después de tener WiFi)
   setupTime();
 
-  // client id únicos
+  // MQTT TLS
   g_mqtt_client_id  = String(MQTT_CLIENT_ID_PREFIX) + g_chip_uid;
-
-  // TLS
   if (TLS_INSECURE) {
-    secureClient.setInsecure(); // ⚠️ Solo pruebas
+    secureClient.setInsecure(); // ⚠️ Solo pruebas; en prod carga CA
   }
   mqtt.setBufferSize(1280);
   mqtt.setServer(MQTT_HOST, MQTT_PORT);
 
   ensureMqtt();
-  publishSensors();
-  lastPublishMs = millis();
+  bool ok = publishSensors();
+
+  // Simple: duerme exactamente SLEEP_INTERVAL_SEC cada ciclo
+  (void)ok; // evita warning si no lo usas
+  delay(50);
+  goToDeepSleep(SLEEP_INTERVAL_SEC);
 }
 
 void loop() {
-  mqtt.loop();
-
-  if (!mqtt.connected()) {
-    ensureMqtt();
-  }
-
-  const unsigned long now = millis();
-  if (now - lastPublishMs >= PUBLISH_INTERVAL_MS) {
-    lastPublishMs = now;
-    publishSensors();
-  }
+  // No se usa: el equipo entra a deep sleep desde setup()
 }
