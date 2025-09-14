@@ -61,7 +61,7 @@ components:
                   examples:
                     - 1.25
                   description: >-
-                    Analog Value in real time
+                    Analog or digital value in real time
                 Units:
                   type: string
                   examples:
