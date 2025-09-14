@@ -1,3 +1,5 @@
 # .gitignore
 secrets.h
 *.env
+
+docker-compose.yml
