@@ -11,8 +11,8 @@ components:
         required:
           - Version
           - Timestamp
-          - Analog
-          - Digital
+          - Device
+          - Datapoints
         properties:
           Version:
             type: string
@@ -23,7 +23,23 @@ components:
             format: date-time
             example: '2022-09-29T07:10:15.520Z'
             description: Timestamp when the data was published to the UNS
-          Analog:
+          Device:
+            type: object
+            required:
+              - Category
+              - Name
+            properties:
+              Category:
+                type: string
+                examples:
+                  - "LFS-3T-B"
+                description: Description or model defined by the manufacturer
+              Name:
+                type: string
+                examples:
+                  - "Freezer 1"
+                description: Description of the sensor defined by end user
+          Datapoints:
             type: array
             items:
               type: object
@@ -32,6 +48,7 @@ components:
                 - Value
                 - Units
                 - Port
+                - Type
               properties:
                 Name:
                   type: string
@@ -56,37 +73,12 @@ components:
                     - 1
                   description: >-
                     Phyisical port of the device
-          Digital:
-            type: array
-            items:
-              type: object
-              required:
-                - Name
-                - Value
-                - StatusDesc
-                - Port
-              properties:
-                Name:
+                Type:
                   type: string
                   examples:
-                    - Main Door Sensor
-                  description: Measurement descriptive name
-                Value:
-                  type: boolean
-                  examples:
-                    - true
+                    - "Analog"
                   description: >-
-                    Boolean value / Status
-                StatusDesc:
-                  type: string
-                  examples:
-                    - OPEN/CLOSE
-                  description: 0 State / 1 State
-                Port:
-                  type: integer
-                  examples:
-                    - 1
-                  description: >-
-                    Physical Port of the device
+                    Analog/Digital/System
+
                 
           
