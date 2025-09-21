@@ -1,0 +1,26 @@
+{
+  "name": "linkforge-dashboard",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n API,WEB -c yellow,cyan \"nodemon --watch server --ext js,mjs,cjs --exec node server/index.js\" \"vite\"",
+    "dev:api": "nodemon --watch server --ext js,mjs,cjs --exec node server/index.js",
+    "dev:web": "vite",
+    "build": "vite build",
+    "start": "node server/prod.js",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.10",
+    "typescript": "~5.8.3",
+    "vite": "^7.1.6"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "pg": "^8.16.3"
+  }
+}

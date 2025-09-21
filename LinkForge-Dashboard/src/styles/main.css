@@ -1,0 +1,161 @@
+:root{
+  /* Base tipo VS Code Dark */
+  --bg:#1e1e1e;
+  --card:#252526;
+  --border:#2d2d2d;
+  --text:#d4d4d4;
+  --muted:#a0a0a0;
+
+  /* Paleta LinkForge (solo sólidos) */
+  --accent:#0a6ed1;     /* azul principal */
+  --accent-weak:#49b5ff;/* azul claro */
+  --accent-2:#6ee7ff;   /* cian para estados/énfasis */
+
+  /* Interacciones */
+  --hover:#2a2a2a;
+
+  /* Navbar/Buttons/Table sin degradados */
+  --nav-bg:#1f1f1f;          /* carbón sólido (mejora contraste del icono) */
+  --nav-accent:#0b5fc0;      /* bordes/indicadores navbar */
+  --btn-bg:var(--accent);    /* botón sólido */
+  --btn-hover:#0952a8;       /* botón hover sólido más oscuro */
+  --th-bg:var(--accent);     /* encabezado de tabla sólido */
+}
+
+*{box-sizing:border-box}
+
+/* ===== Navbar (sólida) ===== */
+.navbar{
+  position: fixed; top:0; left:0; right:0; height:56px;
+  background: var(--nav-bg);
+  display:flex; align-items:center; gap:16px; padding:0 16px;
+  z-index:100; border-bottom:1px solid var(--nav-accent);
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
+}
+.nav-left{ display:flex; align-items:center; gap:10px; }
+
+/* Badge para que el icono resalte sin cambiar HTML */
+.nav-logo{
+  height:28px; 
+  width:auto;
+  display:block;
+}
+
+.brand{ color:#ffffff; font-weight:700; font-size:1rem; letter-spacing:.2px; text-decoration:none; }
+.nav-menu{ list-style:none; margin:0 0 0 12px; padding:0; display:flex; align-items:stretch; gap:0; overflow:hidden; }
+.nav-menu li{ display:block; }
+.nav-menu a{
+  display:block; color:#ffffff; text-decoration:none; padding:14px 14px;
+  border-bottom:2px solid transparent;
+}
+.nav-menu a:hover{
+  background: #232323; color: var(--accent-weak);
+  border-bottom-color: var(--nav-accent);
+}
+.nav-spacer{ flex:1; }
+
+/* ===== Página ===== */
+body{
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  margin:0; padding:20px; padding-top:76px;
+}
+h2{ text-align:center; margin:28px 0 18px; color:#ffffff; }
+
+/* ===== Gallery ===== */
+.gallery{ display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:20px; }
+.gallery-item{
+  background-color: var(--card);
+  border-radius:12px; overflow:hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,.45);
+  transition: transform .2s ease, box-shadow .2s ease, outline .2s ease;
+  cursor:pointer; outline:2px solid transparent;
+}
+.gallery-item:hover{
+  transform: translateY(-5px);
+  box-shadow: 0 10px 28px rgba(0,0,0,.55);
+}
+.gallery-item img{ width:100%; height:auto; display:block; }
+.desc{ padding:8px 12px; border-top:1px solid var(--border); font-size:.9rem; color: var(--muted); }
+.desc:first-of-type{ font-weight:600; font-size:1rem; color:#ffffff; border-top:none; }
+
+/* ===== Estados ===== */
+.status{ font-weight:700; text-transform:uppercase; padding:5px; border-radius:6px; display:inline-block; margin-top:5px; }
+.status.activo{   color: var(--accent-2); }
+.status.cola{     color: var(--accent); }
+.status.inactivo{ color:#ff5b7e; }
+
+/* ===== Título dinámico ===== */
+#selected-title{ margin-top:22px; text-align:center; font-size:1.1rem; font-weight:700; color: var(--accent-2); display:none; }
+
+/* ===== Tabla ===== */
+.table-wrap{
+  background: var(--card);
+  border:1px solid var(--border);
+  border-radius:12px; padding:12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.4);
+  overflow:auto;
+}
+table{ width:100%; border-collapse:collapse; min-width:720px; }
+th, td{ border:1px solid var(--border); padding:10px 12px; text-align:left; font-size:.95rem; }
+th{ background: var(--th-bg); color:#ffffff; position:sticky; top:0; z-index:1; }
+tr:nth-child(even) td{ background-color:#20252b; }
+tr:hover td{ background-color: var(--hover); }
+
+/* ===== Botones (sólidos) ===== */
+.btn{
+  border:1px solid rgba(255,255,255,.12);
+  background: var(--btn-bg);
+  color:#ffffff; padding:6px 10px; border-radius:8px;
+  font-size:.9rem; cursor:pointer;
+  transition: transform .05s ease, background .2s ease, box-shadow .2s ease;
+  box-shadow: 0 0 0 rgba(0,0,0,0);
+  white-space:nowrap;
+}
+.btn:hover{ background: var(--btn-hover); }
+.btn:active{ transform: scale(.98); }
+
+/* ===== Etiquetas / Chips ===== */
+.tag{ font-weight:700; text-transform:uppercase; padding:4px 8px; border-radius:999px; font-size:.8rem; letter-spacing:.3px; border:1px solid var(--border); }
+.tag.activo{ color: var(--accent-2); }
+.tag.cola{   color: var(--accent-weak); }
+.tag.inactivo{ color:#ff5b7e; }
+
+.chip{ display:inline-block; padding:6px 10px; border-radius:999px; font-weight:700; font-size:.9rem; border:1px solid var(--border); }
+.chip.on{          color: var(--accent-2); }
+.chip.recording{   color: var(--accent); }
+.chip.processing{  color: var(--accent-weak); }
+.chip.publishing{  color:#b7e6ff; }
+.chip.off{         color:#ff5b7e; }
+
+/* ===== Highlight “Ver” (glow sutil, sin degradado) ===== */
+@keyframes glow{
+  0%{   outline-color: rgba(110,231,255,0.0); box-shadow: 0 0 0 rgba(110,231,255,0.0); }
+  50%{  outline-color: rgba(110,231,255,0.95); box-shadow: 0 0 24px rgba(110,231,255,0.25); }
+  100%{ outline-color: rgba(110,231,255,0.0); box-shadow: 0 0 0 rgba(110,231,255,0.0); }
+}
+.highlight{ outline:2px solid var(--accent-2); animation: glow 1.2s ease-in-out 2; }
+
+/* ===== Paginación ===== */
+.pager{ display:flex; align-items:center; gap:10px; justify-content:space-between; margin-top:10px; flex-wrap:wrap; }
+.pager-left{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.pager-pages{ display:flex; gap:6px; flex-wrap:wrap; }
+.btn-page{ min-width:36px; text-align:center; }
+.btn.is-active{ box-shadow: inset 0 0 0 2px rgba(255,255,255,.18); }
+
+/* ===== Responsivo / columnas ===== */
+@media (max-width:680px){
+  .brand{ display:none; }
+  .nav-menu a{ padding:14px 12px; }
+  table{ min-width:600px; }
+}
+
+/* ===== Extras tabla ===== */
+.col-img{ width:120px; }
+.col-actions{ width:110px; text-align:center; }
+.table-thumb{
+  width:84px; height:56px; object-fit:cover;
+  border-radius:8px; border:1px solid var(--border); display:block;
+  background:#0f0f0f;
+}

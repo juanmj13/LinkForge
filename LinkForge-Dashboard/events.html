@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Events</title>
+  <link rel="icon" href="/img/logo.png" type="image/png" />
+</head>
+<body>
+  <div id="app-nav"></div>
+
+  <h2>Eventos (DB)</h2>
+
+  <div class="table-wrap">
+    <table id="tbl-events" aria-label="Tabla de eventos">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>ClientID</th>
+          <th>Location</th>
+          <th>Area</th>
+          <th>Subarea</th>
+          <th>DeviceID</th>
+          <th>Received</th>
+          <th>Version</th>
+          <th>Event Time</th>
+          <th>Device Category</th>
+          <th>Device Name</th>
+          <th class="col-actions">Ver</th>
+        </tr>
+      </thead>
+      <tbody><!-- JS --></tbody>
+    </table>
+
+    <!-- Controles de paginación -->
+    <div class="pager" aria-label="Paginación de eventos">
+      <div class="pager-left">
+        <button class="btn btn-page" data-action="first" title="Primera página">«</button>
+        <button class="btn btn-page" data-action="prev" title="Anterior">‹</button>
+        <div class="pager-pages" id="evt-pager-pages"></div>
+        <button class="btn btn-page" data-action="next" title="Siguiente">›</button>
+        <button class="btn btn-page" data-action="last" title="Última página">»</button>
+      </div>
+      <div id="evt-pager-info" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div id="app-footer"></div>
+
+  <script type="module" src="/src/include.ts"></script>
+  <script type="module" src="/src/events.ts"></script>
+</body>
+</html>
