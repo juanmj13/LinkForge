@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Devices</title>
   <link rel="icon" href="/img/logo.png" type="image/png" />
+  <link rel="stylesheet" href="/main.css" />
 </head>
 <body>
   <div id="app-nav"></div>
@@ -46,6 +47,43 @@
   </div>
 
   <div id="app-footer"></div>
+
+  <!-- Modal: Preview de datapoint -->
+  <div id="dp-modal" class="modal is-hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="dp-modal-title">
+    <div class="modal-overlay" data-action="close"></div>
+    <div class="modal-content" role="document">
+      <header class="modal-header">
+        <h3 id="dp-modal-title">Preview de datapoint</h3>
+        <button class="btn btn-close" data-action="close" aria-label="Cerrar">✕</button>
+      </header>
+
+      <section class="modal-body">
+        <div class="dp-toolbar">
+          <label for="dp-select" class="dp-label">Datapoint:</label>
+          <select id="dp-select" class="dp-select" aria-label="Menú de datapoints"></select>
+          <span id="dp-device-label" class="dp-device-label"></span>
+        </div>
+
+        <div id="dp-loading" class="dp-loading is-hidden">Cargando datapoints…</div>
+        <div id="dp-empty" class="dp-empty is-hidden">No hay datapoints disponibles.</div>
+        <div id="dp-error" class="dp-error is-hidden">No se pudieron cargar los datapoints.</div>
+
+        <div id="chart-wrap" class="chart-wrap is-hidden">
+          <div class="chart-head">
+            <span id="chart-title">—</span>
+            <span id="chart-units" class="muted"></span>
+          </div>
+          <canvas id="dp-chart" width="800" height="280" aria-label="Gráfica del datapoint"></canvas>
+          <div id="chart-empty" class="dp-empty is-hidden">Sin datos numéricos para graficar.</div>
+        </div>
+      </section>
+
+      <footer class="modal-footer">
+        <div class="spacer"></div>
+        <button class="btn btn-secondary" data-action="close">Cerrar</button>
+      </footer>
+    </div>
+  </div>
 
   <script type="module" src="/src/include.ts"></script>
   <script type="module" src="/src/devices.ts"></script>

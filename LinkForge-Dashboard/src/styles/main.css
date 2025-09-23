@@ -7,19 +7,19 @@
   --muted:#a0a0a0;
 
   /* Paleta LinkForge (solo sólidos) */
-  --accent:#0a6ed1;     /* azul principal */
-  --accent-weak:#49b5ff;/* azul claro */
-  --accent-2:#6ee7ff;   /* cian para estados/énfasis */
+  --accent:#0a6ed1;
+  --accent-weak:#49b5ff;
+  --accent-2:#6ee7ff;
 
   /* Interacciones */
   --hover:#2a2a2a;
 
   /* Navbar/Buttons/Table sin degradados */
-  --nav-bg:#1f1f1f;          /* carbón sólido (mejora contraste del icono) */
-  --nav-accent:#0b5fc0;      /* bordes/indicadores navbar */
-  --btn-bg:var(--accent);    /* botón sólido */
-  --btn-hover:#0952a8;       /* botón hover sólido más oscuro */
-  --th-bg:var(--accent);     /* encabezado de tabla sólido */
+  --nav-bg:#1f1f1f;
+  --nav-accent:#0b5fc0;
+  --btn-bg:var(--accent);
+  --btn-hover:#0952a8;
+  --th-bg:var(--accent);
 }
 
 *{box-sizing:border-box}
@@ -34,13 +34,7 @@
 }
 .nav-left{ display:flex; align-items:center; gap:10px; }
 
-/* Badge para que el icono resalte sin cambiar HTML */
-.nav-logo{
-  height:28px; 
-  width:auto;
-  display:block;
-}
-
+.nav-logo{ height:28px; width:auto; display:block; }
 .brand{ color:#ffffff; font-weight:700; font-size:1rem; letter-spacing:.2px; text-decoration:none; }
 .nav-menu{ list-style:none; margin:0 0 0 12px; padding:0; display:flex; align-items:stretch; gap:0; overflow:hidden; }
 .nav-menu li{ display:block; }
@@ -116,6 +110,11 @@ tr:hover td{ background-color: var(--hover); }
 .btn:hover{ background: var(--btn-hover); }
 .btn:active{ transform: scale(.98); }
 
+.btn-secondary{ background:#39424d; }
+.btn-secondary:hover{ background:#323a43; }
+
+.btn-close{ background:transparent; border:1px solid transparent; color:#fff; font-size:18px; }
+
 /* ===== Etiquetas / Chips ===== */
 .tag{ font-weight:700; text-transform:uppercase; padding:4px 8px; border-radius:999px; font-size:.8rem; letter-spacing:.3px; border:1px solid var(--border); }
 .tag.activo{ color: var(--accent-2); }
@@ -129,7 +128,7 @@ tr:hover td{ background-color: var(--hover); }
 .chip.publishing{  color:#b7e6ff; }
 .chip.off{         color:#ff5b7e; }
 
-/* ===== Highlight “Ver” (glow sutil, sin degradado) ===== */
+/* ===== Highlight “Ver” ===== */
 @keyframes glow{
   0%{   outline-color: rgba(110,231,255,0.0); box-shadow: 0 0 0 rgba(110,231,255,0.0); }
   50%{  outline-color: rgba(110,231,255,0.95); box-shadow: 0 0 24px rgba(110,231,255,0.25); }
@@ -159,3 +158,33 @@ tr:hover td{ background-color: var(--hover); }
   border-radius:8px; border:1px solid var(--border); display:block;
   background:#0f0f0f;
 }
+
+/* ======= MODALES ======= */
+.is-hidden { display: none !important; } /* 👈 importante para ocultar secciones */
+.modal.is-hidden { display:none; }
+.modal { position:fixed; inset:0; z-index:1000; }
+.modal-overlay { position:absolute; inset:0; background:#0007; }
+.modal-content { position:relative; margin:6vh auto; width:min(820px, 94vw); background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,.55); display:flex; flex-direction:column; max-height:88vh; }
+.modal-header, .modal-footer { padding:12px 16px; border-bottom:1px solid var(--border); }
+.modal-footer { border-top:1px solid var(--border); border-bottom:none; display:flex; gap:8px; align-items:center; }
+.modal-body { padding:12px 16px; overflow:auto; }
+
+.dp-toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+.dp-label { font-size:.95rem; color:#cfd8e3; }
+.dp-select {
+  flex:1; min-width:240px;
+  background:#111827; color:#e5e7eb;
+  border:1px solid #374151; border-radius:8px;
+  padding:8px 10px; outline:none;
+}
+.dp-select:focus{ border-color: var(--accent); box-shadow: 0 0 0 2px rgba(10,110,209,.25); }
+.dp-device-label { color:#9ca3af; font-size:.85rem; }
+
+.dp-loading, .dp-empty, .dp-error { padding:10px 0; color:#cbd5e1; }
+.dp-error { color:#ffb4c4; }
+
+.chart-wrap { background:#111318; border:1px solid var(--border); border-radius:12px; padding:10px; }
+.chart-head { display:flex; gap:10px; align-items:baseline; margin-bottom:6px; }
+.chart-head .muted { color: var(--muted); font-size:.85rem; }
+#dp-chart { width:100%; height:auto; display:block; }
+.spacer { flex:1; }
